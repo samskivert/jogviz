@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<project name="jogviz" default="compile" basedir=".">
+  <property name="src.dir"     value="src"/>
+  <property name="deploy.dir"  value="target"/>
+  <property name="classes.dir" value="${deploy.dir}/classes"/>
+  <property name="exclass.dir" value="${deploy.dir}/exclass"/>
+  <property name="libs.dir"    value="lib"/>
+
+  <!-- defines our classpath -->
+  <path id="classpath">
+    <pathelement location="${classes.dir}"/>
+    <fileset dir="${deploy.dir}/lib" includes="*.jar"/>
+  </path>
+
+  <!-- defines our runtime library dependencies -->
+  <fileset dir="${libs.dir}" id="runtime.libs">
+    <include name="google-collect.jar"/>
+    <include name="samskivert.jar"/>
+  </fileset>
+
+  <!-- defines our build-time library dependencies -->
+  <fileset dir="${libs.dir}" id="build.libs">
+    <!--<include name="ant.jar"/>-->
+    <include name="junit4.jar"/>
+  </fileset>
+
+  <target name="prepare">
+    <mkdir dir="${deploy.dir}"/>
+    <mkdir dir="${deploy.dir}/lib"/>
+    <mkdir dir="${classes.dir}"/>
+    <copy todir="${deploy.dir}/lib" flatten="true">
+      <fileset refid="build.libs"/>
+      <fileset refid="runtime.libs"/>
+      <fileset dir="${java.home}/../lib" includes="tools.jar"/>
+    </copy>
+  </target>
+
+  <target name="clean" description="Completely removes build result directory.">
+    <delete dir="${deploy.dir}"/>
+  </target>
+
+  <target name="compile" depends="prepare" description="Compiles the code.">
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" includeAntRuntime="false"
+           debug="on" optimize="${build.optimize}" source="1.6" target="1.6" encoding="utf-8">
+      <classpath refid="classpath"/>
+      <exclude name="com/samskivert/jogviz/ExampleApp*"/>
+      <compilerarg value="-Xlint"/>
+      <compilerarg value="-Xlint:-serial"/>
+    </javac>
+  </target>
+
+  <!-- rebuilds everything -->
+  <target name="all" depends="clean,prepare,compile,javadoc,dist"
+          description="Cleans and rebuilds everything including documentation."/>
+
+  <!-- runs our unit tests -->
+  <target name="tests" depends="prepare,compile" description="Runs the unit tests.">
+    <taskdef name="unit" classpathref="classpath"
+      classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"/>
+    <unit printsummary="off" haltonfailure="yes" fork="${junit.fork}">
+      <classpath>
+        <pathelement location="${classes.dir}"/>
+        <fileset dir="${deploy.dir}/lib" includes="*.jar"/>
+      </classpath>
+      <sysproperty key="test_dir" value="${basedir}"/>
+      <formatter type="brief" usefile="false"/>
+      <batchtest>
+        <fileset dir="${src.dir}">
+          <include name="**/tests/**/*Test.java"/>
+        </fileset>
+      </batchtest>
+    </unit>
+  </target>
+
+  <!-- builds our distribution jar file -->
+  <target name="dist" depends="prepare,compile"
+          description="Compiles the code and builds our jar file.">
+    <jar destfile="${deploy.dir}/${ant.project.name}-bare.jar" basedir="${classes.dir}">
+      <exclude name="**/tests/**"/>
+    </jar>
+
+    <!-- use autojar to generate a jar file with all of our dependencies -->
+    <pathconvert targetos="unix" property="runtime.lpath" refid="runtime.libs"/>
+    <java jar="lib/autojar.jar" fork="true">
+      <arg value="-c"/>
+      <arg value="${runtime.lpath}"/>
+      <arg value="-o"/>
+      <arg value="${deploy.dir}/${ant.project.name}.jar"/>
+      <arg value="${deploy.dir}/${ant.project.name}-bare.jar"/>
+      <!-- TODO: enhance autojar to allow the com/sun/* files to be excluded so -->
+      <!-- that they don't result in a warning every time we run the tool -->
+    </java>
+  </target>
+
+  <!-- runs the compiler on the example code with the jogviz processor active -->
+  <target name="example" depends="prepare,compile"
+          description="Compiles the code and builds our jar file.">
+    <delete dir="${exclass.dir}"/>
+    <mkdir dir="${exclass.dir}"/>
+
+    <echo>--- Compiling example app with JOGVIZ:</echo>
+    <javac srcdir="${src.dir}" destdir="${exclass.dir}" includeAntRuntime="false"
+           debug="on" optimize="${build.optimize}" source="1.6" target="1.6" encoding="utf-8">
+      <classpath>
+        <path refid="classpath"/>
+        <pathelement location="${exclass.dir}"/>
+      </classpath>
+      <compilerarg value="-Xlint"/>
+      <compilerarg value="-Xlint:-serial"/>
+      <!--<compilerarg value="-XprintProcessorInfo"/>-->
+      <compilerarg value="-processor"/>
+      <compilerarg value="com.samskivert.jogviz.apt.Processor"/>
+      <include name="com/samskivert/jogviz/ExampleApp*"/>
+    </javac>
+  </target>
+</project>
