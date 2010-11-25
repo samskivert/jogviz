@@ -23,7 +23,6 @@
              uri="urn:maven-artifact-ant" classpath="${maven-ant.jar}"/>
     <artifact:pom id="pom" file="pom.xml"/>
     <artifact:dependencies pathId="compile.classpath" pomRefId="pom" useScope="compile"/>
-    <artifact:dependencies pathId="test.classpath" pomRefId="pom" useScope="test"/>
 
     <mkdir dir="${deploy.dir}"/>
   </target>
@@ -39,35 +38,14 @@
       <classpath>
         <path refid="compile.classpath"/>
       </classpath>
-      <exclude name="com/samskivert/jogviz/ExampleApp*"/>
       <compilerarg value="-Xlint"/>
       <compilerarg value="-Xlint:-serial"/>
     </javac>
   </target>
 
-  <target name="tests" depends="compile" description="Runs the unit tests.">
-    <taskdef name="unit" classpathref="test.classpath"
-      classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"/>
-    <unit printsummary="off" haltonfailure="yes" fork="${junit.fork}">
-      <classpath>
-        <path refid="test.classpath"/>
-        <pathelement location="${classes.dir}"/>
-      </classpath>
-      <sysproperty key="test_dir" value="${basedir}"/>
-      <formatter type="brief" usefile="false"/>
-      <batchtest>
-        <fileset dir="${src.dir}">
-          <include name="**/tests/**/*Test.java"/>
-        </fileset>
-      </batchtest>
-    </unit>
-  </target>
-
   <target name="dist" depends="compile"
           description="Compiles the code and builds our jar file.">
-    <jar destfile="${deploy.dir}/${ant.project.name}-bare.jar" basedir="${classes.dir}">
-      <exclude name="**/tests/**"/>
-    </jar>
+    <jar destfile="${deploy.dir}/${ant.project.name}-bare.jar" basedir="${classes.dir}"/>
 
     <!-- use autojar to generate a jar file with all of our dependencies -->
     <pathconvert targetos="unix" property="runtime.lpath" refid="compile.classpath"/>
@@ -88,7 +66,7 @@
     <mkdir dir="${exclass.dir}"/>
 
     <echo>--- Compiling example app with JOGVIZ:</echo>
-    <javac srcdir="${src.dir}" destdir="${exclass.dir}" includeAntRuntime="false"
+    <javac srcdir="src/example/java" destdir="${exclass.dir}" includeAntRuntime="false"
            debug="on" optimize="${build.optimize}" source="1.6" target="1.6" encoding="utf-8">
       <classpath>
         <path refid="compile.classpath"/>
@@ -100,7 +78,6 @@
       <!--<compilerarg value="-XprintProcessorInfo"/>-->
       <compilerarg value="-processor"/>
       <compilerarg value="com.samskivert.jogviz.apt.Processor"/>
-      <include name="com/samskivert/jogviz/ExampleApp*"/>
     </javac>
   </target>
 </project>

@@ -23,3 +23,9 @@ You can also tell the `Grapher` to avoid recursing into certain types using the
 
 Another useful method is `filter`. Take a look at the `Grapher` source for
 enlightening details on its use. It's pretty simple.
+
+You can also see some sample output by invoking:
+
+    ant example
+
+This visualizes the javac AST on some sample code.
